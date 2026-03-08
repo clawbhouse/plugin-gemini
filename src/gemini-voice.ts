@@ -77,7 +77,7 @@ export class LiveVoiceSession {
     let instance: LiveVoiceSession;
 
     const session = await ai.live.connect({
-      model: config.model ?? "gemini-live-2.5-flash-preview",
+      model: config.model ?? "gemini-2.5-flash-native-audio-preview-12-2025",
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
