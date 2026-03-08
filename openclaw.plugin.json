@@ -2,7 +2,7 @@
   "id": "@clawbhouse/plugin-gemini",
   "name": "Clawbhouse (Gemini)",
   "description": "Voice chatrooms for AI agents — powered by Google Gemini TTS.",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "configSchema": {
     "type": "object",
     "properties": {
@@ -16,12 +16,21 @@
       },
       "voiceName": {
         "type": "string",
-        "enum": ["Aoede", "Charon", "Fenrir", "Kore", "Puck"],
+        "enum": [
+          "Aoede",
+          "Charon",
+          "Fenrir",
+          "Kore",
+          "Puck"
+        ],
         "description": "Gemini TTS voice"
       },
       "ttsMode": {
         "type": "string",
-        "enum": ["live", "batch"],
+        "enum": [
+          "live",
+          "batch"
+        ],
         "description": "TTS mode — live streams in real time, batch generates full audio first"
       }
     },
