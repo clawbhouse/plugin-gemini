@@ -58,43 +58,58 @@ export async function textToSpeechSafe(
   }
 }
 
-/**
- * Persistent Gemini Live API session for streaming text-to-speech.
- * Sends text in, receives PCM audio chunks back in real time.
- */
 export class LiveVoiceSession {
-  private session: Session;
+  private config: GeminiVoiceConfig;
+  private session: Session | null = null;
   private audioHandler: ((pcm: Buffer) => void) | null = null;
   private turnResolve: (() => void) | null = null;
+  private turnReject: ((err: Error) => void) | null = null;
+  private dead = false;
 
-  private constructor(session: Session) {
-    this.session = session;
+  private constructor(config: GeminiVoiceConfig) {
+    this.config = config;
   }
 
   static async create(config: GeminiVoiceConfig): Promise<LiveVoiceSession> {
-    const ai = new GoogleGenAI({ apiKey: config.apiKey });
+    const instance = new LiveVoiceSession(config);
+    await instance.connect();
+    return instance;
+  }
 
-    let instance: LiveVoiceSession;
+  private async connect(): Promise<void> {
+    const ai = new GoogleGenAI({ apiKey: this.config.apiKey });
 
-    const session = await ai.live.connect({
-      model: config.model ?? "gemini-2.5-flash-native-audio-preview-12-2025",
+    this.session = await ai.live.connect({
+      model: this.config.model ?? "gemini-2.5-flash-native-audio-preview-12-2025",
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
-              voiceName: config.voiceName ?? "Kore",
+              voiceName: this.config.voiceName ?? "Kore",
             },
           },
         },
       },
       callbacks: {
-        onmessage: (msg: LiveServerMessage) => instance?.handleMessage(msg),
+        onmessage: (msg: LiveServerMessage) => this.handleMessage(msg),
+        onclose: () => this.handleDisconnect(),
+        onerror: () => this.handleDisconnect(),
       },
     });
 
-    instance = new LiveVoiceSession(session);
-    return instance;
+    this.dead = false;
+  }
+
+  private handleDisconnect(): void {
+    this.dead = true;
+    this.session = null;
+    if (this.turnReject) {
+      this.turnReject(new Error("Gemini Live session disconnected"));
+      this.turnReject = null;
+      this.turnResolve = null;
+      this.audioHandler = null;
+    }
   }
 
   private handleMessage(msg: LiveServerMessage): void {
@@ -113,25 +128,30 @@ export class LiveVoiceSession {
     if (content.turnComplete) {
       this.turnResolve?.();
       this.turnResolve = null;
+      this.turnReject = null;
       this.audioHandler = null;
     }
   }
 
-  /**
-   * Send text and stream PCM audio chunks back via onAudio.
-   * Resolves when the model finishes generating audio for this turn.
-   */
-  speak(text: string, onAudio: (pcm: Buffer) => void): Promise<void> {
+  async speak(text: string, onAudio: (pcm: Buffer) => void): Promise<void> {
+    if (this.dead || !this.session) {
+      console.log("[gemini-voice] reconnecting Live session...");
+      await this.connect();
+    }
+
     this.audioHandler = onAudio;
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       this.turnResolve = resolve;
-      this.session.sendClientContent({ turns: text, turnComplete: true });
+      this.turnReject = reject;
+      this.session!.sendClientContent({ turns: text, turnComplete: true });
     });
   }
 
   close(): void {
-    this.session.close();
+    this.dead = true;
+    this.session?.close();
+    this.session = null;
   }
 }
 
