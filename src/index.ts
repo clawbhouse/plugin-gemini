@@ -32,6 +32,8 @@ export class ClawbhouseGeminiToolHandler extends ClawbhouseToolHandlerBase {
   }
 }
 
+let sharedHandler: ClawbhouseGeminiToolHandler | null = null;
+
 const clawbhouseGeminiPlugin = {
   id: "clawbhouse-gemini",
   name: "Clawbhouse (Gemini)",
@@ -80,19 +82,21 @@ const clawbhouseGeminiPlugin = {
       voiceName: config.voiceName,
     };
 
-    const handler = new ClawbhouseGeminiToolHandler({
-      serverUrl: config.serverUrl,
-      gemini,
-      ttsMode: config.ttsMode,
-    });
+    if (!sharedHandler) {
+      sharedHandler = new ClawbhouseGeminiToolHandler({
+        serverUrl: config.serverUrl,
+        gemini,
+        ttsMode: config.ttsMode,
+      });
 
-    handler.init().catch((err) => {
-      api.logger.error(`[clawbhouse-gemini] Init failed: ${err instanceof Error ? err.message : String(err)}`);
-    });
+      sharedHandler.init().catch((err) => {
+        api.logger.error(`[clawbhouse-gemini] Init failed: ${err instanceof Error ? err.message : String(err)}`);
+      });
+    }
 
-    registerClawbhouseChannel(api.registerChannel.bind(api), handler);
+    registerClawbhouseChannel(api.registerChannel.bind(api), sharedHandler);
 
-    registerClawbhouseTools(api.registerTool.bind(api), handler);
+    registerClawbhouseTools(api.registerTool.bind(api), sharedHandler);
 
     api.logger.info(`[clawbhouse-gemini] Registered channel + ${TOOL_SCHEMAS.length} tools`);
   },
