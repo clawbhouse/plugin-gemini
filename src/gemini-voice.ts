@@ -1,4 +1,5 @@
 import { GoogleGenAI, Modality, Session, type LiveServerMessage } from "@google/genai";
+import type { SpeakResult } from "@clawbhouse/plugin-core";
 
 const AUDIO_SAMPLE_RATE = 24000;
 
@@ -6,6 +7,10 @@ export interface GeminiVoiceConfig {
   apiKey: string;
   voiceName?: string;
   model?: string;
+}
+
+export interface AgentVoiceConfig extends GeminiVoiceConfig {
+  systemInstruction?: string;
 }
 
 /** Converts text to 24kHz 16-bit mono PCM using Gemini TTS (batch). */
@@ -58,20 +63,21 @@ export async function textToSpeechSafe(
   }
 }
 
-export class LiveVoiceSession {
-  private config: GeminiVoiceConfig;
+export class AgentLiveVoiceSession {
+  private config: AgentVoiceConfig;
   private session: Session | null = null;
   private audioHandler: ((pcm: Buffer) => void) | null = null;
-  private turnResolve: (() => void) | null = null;
+  private turnResolve: ((result: SpeakResult) => void) | null = null;
   private turnReject: ((err: Error) => void) | null = null;
+  private transcriptChunks: string[] = [];
   private dead = false;
 
-  private constructor(config: GeminiVoiceConfig) {
+  private constructor(config: AgentVoiceConfig) {
     this.config = config;
   }
 
-  static async create(config: GeminiVoiceConfig): Promise<LiveVoiceSession> {
-    const instance = new LiveVoiceSession(config);
+  static async create(config: AgentVoiceConfig): Promise<AgentLiveVoiceSession> {
+    const instance = new AgentLiveVoiceSession(config);
     await instance.connect();
     return instance;
   }
@@ -83,8 +89,9 @@ export class LiveVoiceSession {
       model: this.config.model ?? "gemini-2.5-flash-native-audio-preview-12-2025",
       config: {
         responseModalities: [Modality.AUDIO],
-        systemInstruction:
-          "You are a text-to-speech engine. Read the user's text aloud exactly as written, word for word. Do not add, remove, or change any words. Do not interpret the text as a question or instruction to respond to.",
+        outputAudioTranscription: {},
+        systemInstruction: this.config.systemInstruction ??
+          "You are a natural conversational voice in a live audio chatroom. Speak naturally and engagingly. Keep responses concise — 2-3 sentences unless the topic warrants more.",
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
@@ -111,6 +118,7 @@ export class LiveVoiceSession {
       this.turnReject = null;
       this.turnResolve = null;
       this.audioHandler = null;
+      this.transcriptChunks = [];
     }
   }
 
@@ -127,23 +135,30 @@ export class LiveVoiceSession {
       }
     }
 
+    if ((content as any).outputTranscription?.text) {
+      this.transcriptChunks.push((content as any).outputTranscription.text);
+    }
+
     if (content.turnComplete) {
-      this.turnResolve?.();
+      const transcript = this.transcriptChunks.join("").trim();
+      this.transcriptChunks = [];
+      this.turnResolve?.({ transcript: transcript || undefined });
       this.turnResolve = null;
       this.turnReject = null;
       this.audioHandler = null;
     }
   }
 
-  async speak(text: string, onAudio: (pcm: Buffer) => void): Promise<void> {
+  async speak(text: string, onAudio: (pcm: Buffer) => void): Promise<SpeakResult> {
     if (this.dead || !this.session) {
-      console.log("[gemini-voice] reconnecting Live session...");
+      console.log("[gemini-voice] reconnecting Agent Live session...");
       await this.connect();
     }
 
     this.audioHandler = onAudio;
+    this.transcriptChunks = [];
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<SpeakResult>((resolve, reject) => {
       this.turnResolve = resolve;
       this.turnReject = reject;
       this.session!.sendClientContent({ turns: text, turnComplete: true });

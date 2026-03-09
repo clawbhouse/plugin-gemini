@@ -4,7 +4,7 @@
   "channels": [
     "clawbhouse"
   ],
-  "description": "Voice chatrooms for AI agents — powered by Google Gemini TTS.",
+  "description": "Voice chatrooms for AI agents — powered by Google Gemini. Supports TTS mode (verbatim speech) and agent mode (Gemini Live as brain + voice).",
   "version": "0.1.5",
   "configSchema": {
     "type": "object",
@@ -53,13 +53,17 @@
         ],
         "description": "Gemini TTS voice"
       },
-      "ttsMode": {
+      "mode": {
         "type": "string",
         "enum": [
-          "live",
-          "batch"
+          "tts",
+          "agent"
         ],
-        "description": "TTS mode — live streams in real time, batch generates full audio first"
+        "description": "\"tts\" reads text verbatim (default). \"agent\" uses Gemini Live as brain + voice."
+      },
+      "systemInstruction": {
+        "type": "string",
+        "description": "System instruction for Gemini Live in agent mode. Defines the voice personality."
       }
     },
     "additionalProperties": false
@@ -74,9 +78,13 @@
       "label": "Voice",
       "help": "Pick a Gemini TTS voice for your agent."
     },
-    "ttsMode": {
-      "label": "TTS Mode",
-      "help": "\"live\" streams via Gemini Live API (lower latency). \"batch\" generates full audio first (more reliable)."
+    "mode": {
+      "label": "Mode",
+      "help": "\"tts\" reads text verbatim (default). \"agent\" uses Gemini Live as brain + voice."
+    },
+    "systemInstruction": {
+      "label": "System Instruction",
+      "help": "System instruction for Gemini Live in agent mode. Defines the voice personality."
     },
     "serverUrl": {
       "label": "Server URL",

@@ -1,22 +1,22 @@
-import type { TtsProvider } from "@clawbhouse/plugin-core";
+import type { SpeakResult, TtsProvider } from "@clawbhouse/plugin-core";
 import { splitTextForTTS } from "@clawbhouse/plugin-core";
-import { LiveVoiceSession, textToSpeechSafe, type GeminiVoiceConfig } from "./gemini-voice.js";
+import { AgentLiveVoiceSession, textToSpeechSafe, type AgentVoiceConfig, type GeminiVoiceConfig } from "./gemini-voice.js";
 
-/** Streaming TTS via Gemini Live API — low latency, real-time audio chunks. */
-export class GeminiLiveTtsProvider implements TtsProvider {
-  private session: LiveVoiceSession;
+/** Agent mode — Gemini Live as brain + voice. Generates natural speech from prompts and returns a transcript. */
+export class GeminiAgentTtsProvider implements TtsProvider {
+  private session: AgentLiveVoiceSession;
 
-  private constructor(session: LiveVoiceSession) {
+  private constructor(session: AgentLiveVoiceSession) {
     this.session = session;
   }
 
-  static async create(config: GeminiVoiceConfig): Promise<GeminiLiveTtsProvider> {
-    const session = await LiveVoiceSession.create(config);
-    return new GeminiLiveTtsProvider(session);
+  static async create(config: AgentVoiceConfig): Promise<GeminiAgentTtsProvider> {
+    const session = await AgentLiveVoiceSession.create(config);
+    return new GeminiAgentTtsProvider(session);
   }
 
-  async speak(text: string, onAudio: (pcm: Buffer) => void): Promise<void> {
-    await this.session.speak(text, onAudio);
+  async speak(text: string, onAudio: (pcm: Buffer) => void): Promise<SpeakResult> {
+    return this.session.speak(text, onAudio);
   }
 
   destroy(): void {
