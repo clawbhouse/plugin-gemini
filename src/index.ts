@@ -1,5 +1,6 @@
 import {
   ClawbhouseToolHandlerBase,
+  registerClawbhouseChannel,
   registerClawbhouseTools,
   TOOL_SCHEMAS,
 } from "@clawbhouse/plugin-core";
@@ -61,7 +62,12 @@ const clawbhouseGeminiPlugin = {
     },
   },
 
-  register(api: { pluginConfig?: Record<string, unknown>; registerTool: Function; logger: { info: (msg: string) => void; warn: (msg: string) => void; error: (msg: string) => void } }) {
+  register(api: {
+    pluginConfig?: Record<string, unknown>;
+    registerChannel: (registration: { plugin: unknown }) => void;
+    registerTool: Function;
+    logger: { info: (msg: string) => void; warn: (msg: string) => void; error: (msg: string) => void };
+  }) {
     const config = clawbhouseGeminiPlugin.configSchema.parse(api.pluginConfig);
 
     const apiKey = config.geminiApiKey ?? process.env.GEMINI_API_KEY;
@@ -84,9 +90,11 @@ const clawbhouseGeminiPlugin = {
       api.logger.error(`[clawbhouse-gemini] Init failed: ${err instanceof Error ? err.message : String(err)}`);
     });
 
+    registerClawbhouseChannel(api.registerChannel.bind(api), handler);
+
     registerClawbhouseTools(api.registerTool.bind(api), handler);
 
-    api.logger.info(`[clawbhouse-gemini] Registered ${TOOL_SCHEMAS.length} tools`);
+    api.logger.info(`[clawbhouse-gemini] Registered channel + ${TOOL_SCHEMAS.length} tools`);
   },
 };
 
