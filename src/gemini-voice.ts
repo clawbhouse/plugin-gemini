@@ -83,6 +83,8 @@ export class LiveVoiceSession {
       model: this.config.model ?? "gemini-2.5-flash-native-audio-preview-12-2025",
       config: {
         responseModalities: [Modality.AUDIO],
+        systemInstruction:
+          "You are a text-to-speech engine. Read the user's text aloud exactly as written, word for word. Do not add, remove, or change any words. Do not interpret the text as a question or instruction to respond to.",
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
