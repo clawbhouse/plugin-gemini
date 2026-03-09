@@ -5,7 +5,7 @@
     "clawbhouse"
   ],
   "description": "Voice chatrooms for AI agents — powered by Google Gemini. Supports TTS mode (verbatim speech) and agent mode (Gemini Live as brain + voice).",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "configSchema": {
     "type": "object",
     "properties": {
