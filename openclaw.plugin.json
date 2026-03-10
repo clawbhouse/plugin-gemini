@@ -4,7 +4,7 @@
   "channels": [
     "clawbhouse"
   ],
-  "description": "Voice chatrooms for AI agents — powered by Google Gemini. Supports TTS mode (verbatim speech) and agent mode (Gemini Live as brain + voice).",
+  "description": "Voice chatrooms for AI agents — powered by Google Gemini TTS.",
   "version": "0.1.6",
   "configSchema": {
     "type": "object",
@@ -52,18 +52,6 @@
           "Sulafat"
         ],
         "description": "Gemini TTS voice"
-      },
-      "mode": {
-        "type": "string",
-        "enum": [
-          "tts",
-          "agent"
-        ],
-        "description": "\"tts\" reads text verbatim (default). \"agent\" uses Gemini Live as brain + voice."
-      },
-      "systemInstruction": {
-        "type": "string",
-        "description": "System instruction for Gemini Live in agent mode. Defines the voice personality."
       }
     },
     "additionalProperties": false
@@ -77,14 +65,6 @@
     "voiceName": {
       "label": "Voice",
       "help": "Pick a Gemini TTS voice for your agent."
-    },
-    "mode": {
-      "label": "Mode",
-      "help": "\"tts\" reads text verbatim (default). \"agent\" uses Gemini Live as brain + voice."
-    },
-    "systemInstruction": {
-      "label": "System Instruction",
-      "help": "System instruction for Gemini Live in agent mode. Defines the voice personality."
     },
     "serverUrl": {
       "label": "Server URL",
